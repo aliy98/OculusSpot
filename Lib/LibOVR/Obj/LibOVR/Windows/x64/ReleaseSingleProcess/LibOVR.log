@@ -1,0 +1,1 @@
+﻿C:\Users\utente\Desktop\OculusSpot\Lib\LibOVR\Projects\Windows\VS2017\LibOVR.vcxproj(148,5): error MSB4019: The imported project "C:\Users\utente\Desktop\OculusSpot\Lib\OVRRootPath.props" was not found. Confirm that the path in the <Import> declaration is correct, and that the file exists on disk.

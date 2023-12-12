@@ -1,0 +1,5 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(376,5): warning MSB8004: Intermediate Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Intermediate Directory.
+  OVR_CAPIShim.c
+  OVR_CAPI_Util.cpp
+  OVR_StereoProjection.cpp
+  LibOVR.vcxproj -> C:\Users\utente\Desktop\OculusSpot\Lib\LibOVR\Projects\Windows\VS2017\../../../Lib/Windows/x64/Release/LibOVR.lib
