@@ -34,7 +34,7 @@ int main()
 	const char* pythonScript = "\\..\\Scripts\\main.py";
 
 	// Execute Python script using system command
-	std::string command = "start cmd /k python " + std::string(currentDir) + std::string(pythonScript);
+	std::string command = "start cmd /k python3 " + std::string(currentDir) + std::string(pythonScript);
 	if (system(command.c_str()) != 0) {
 		std::cerr << "Error executing Python script" << std::endl;
 		return 1;

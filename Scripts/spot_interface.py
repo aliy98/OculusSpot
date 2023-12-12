@@ -10,14 +10,14 @@ from bosdyn.client import create_standard_sdk
 from bosdyn.client.estop import EstopClient, EstopEndpoint, EstopKeepAlive
 from bosdyn.client.lease import LeaseClient
 from bosdyn.client.power import PowerClient
-from bosdyn.client.robot_command import RobotCommandBuilder, RobotCommandClient, blocking_stand
+from bosdyn.client.robot_command import RobotCommandBuilder, RobotCommandClient, blocking_stand, blocking_sit
 from bosdyn.client.robot_state import RobotStateClient
 
 LOGGER = logging.getLogger()
 VELOCITY_BASE_SPEED = 0.5  # m/s
 VELOCITY_BASE_ANGULAR = 0.8  # rad/sec
 VELOCITY_CMD_DURATION = 0.6  # seconds
-MAX_PITCH = 0.35 # rad
+MAX_PITCH = 0.17 # rad
 MAX_ROLL = 0.17 # rad
 
 
@@ -31,21 +31,36 @@ class SpotInterface:
         self._v_y = 0.0
         self._v_rot = 0.0
         self._powered_on = False
+        self._estop_keepalive = None
+        LOGGER.info("creating robot instance")
         sdk = create_standard_sdk("spot_interface")
-        self._robot = sdk.create_robot('192.168.80.3')
+        self._robot = sdk.create_robot('10.0.0.3')
         self._robot.authenticate('user', 'wruzvkg4rce4')
         self._robot.time_sync.wait_for_sync()
         self._lease_client = self._robot.ensure_client(LeaseClient.default_service_name)
+        try:
+            self._estop_client = self._robot.ensure_client(EstopClient.default_service_name)
+            self._estop_endpoint = EstopEndpoint(self._estop_client, 'GNClient', 9.0)
+        except:
+            # Not the estop.
+            self._estop_client = None
+            self._estop_endpoint = None
         self._power_client = self._robot.ensure_client(PowerClient.default_service_name)
         self._robot_state_client = self._robot.ensure_client(RobotStateClient.default_service_name)
         self._robot_command_client = self._robot.ensure_client(RobotCommandClient.default_service_name)
-        self._lease = self._lease_client.take()
-        self._lease_keepalive = bosdyn.client.lease.LeaseKeepAlive(self._lease_client)
-        self._power_on()
-        time.sleep(5)
-        blocking_stand(self._robot_command_client)
-        time.sleep(5)
-        LOGGER.info("ready to take commands")
+        self._start()
+        
+    
+    def _toggle_estop(self):
+        """toggle estop on/off. Initial state is ON"""
+        if self._estop_client is not None and self._estop_endpoint is not None:
+            if not self._estop_keepalive:
+                self._estop_keepalive = EstopKeepAlive(self._estop_endpoint)
+            else:
+                LOGGER.info('stopping estop')
+                self._estop_keepalive.stop()
+                self._estop_keepalive.shutdown()
+                self._estop_keepalive = None
         
     def _orientation_cmd_helper(self, yaw=0.0, roll=0.0, pitch=0.0, height=0.0):
         orientation = geometry.EulerZXY(yaw, roll, pitch)
@@ -98,21 +113,40 @@ class SpotInterface:
             self._v_y = v_y
         if abs(v_rot) < VELOCITY_BASE_ANGULAR:
             self._v_rot = v_rot
-        self._orientation_cmd_helper(roll=self._roll, pitch=self._pitch)
+        self._orientation_cmd_helper(pitch=self._pitch)
         #self._velocity_cmd_helper(v_x=self._v_x, v_y=self._v_y, v_rot=self._v_rot)
         
-    def _power_on(self):
+    def _start(self):
+        self._lease = self._lease_client.take()
+        self._lease_keepalive = bosdyn.client.lease.LeaseKeepAlive(self._lease_client)
+        if self._estop_endpoint is not None:
+            self._estop_endpoint.force_simple_setup(
+            )  # Set this endpoint as the robot's sole estop.
+        self._toggle_estop()
         self._robot.power_on()
         self._powered_on=True
+        time.sleep(5)
+        blocking_stand(self._robot_command_client)
+        time.sleep(5)
+        LOGGER.info("ready to take commands")
 
-    def power_off(self):
+    def shutdown(self):
+        self._orientation_cmd_helper(yaw=0.0, roll=0.0, pitch=0.0)
+        time.sleep(5)
+        blocking_sit(self._robot_command_client)
+        time.sleep(5)
         safe_power_off_cmd=RobotCommandBuilder.safe_power_off_command()
         self._robot_command_client.robot_command(command= safe_power_off_cmd)
         time.sleep(2.5)
         self._powered_on=False
-    
-    def reset_orientation(self):
-        self._orientation_cmd_helper(yaw=0.0, roll=0.0, pitch=0.0)
+        LOGGER.info('Shutting down SpotInterface.')
+        if self._estop_keepalive:
+            # This stops the check-in thread but does not stop the robot.
+            self._estop_keepalive.shutdown()
+        if self._lease_keepalive:
+            self._lease_keepalive.shutdown()
+
+        
 
 
 

@@ -18,27 +18,26 @@ class Controller:
         self._pid_lin_x = PID(self._kp_lin, self._ki_lin, self._kd_lin)
         self._pid_lin_y = PID(self._kp_lin, self._ki_lin, self._kd_lin)
 
-        self._pid_ang_x.output_limits(-MAX_ANG_VEL, MAX_ANG_VEL)
-        self._pid_ang_y.output_limits(-MAX_ANG_VEL, MAX_ANG_VEL)
-        self._pid_ang_z.output_limits(-MAX_ANG_VEL, MAX_ANG_VEL)
-        self._pid_lin_x.output_limits(-MAX_LIN_VEL, MAX_LIN_VEL)
-        self._pid_lin_y.output_limits(-MAX_LIN_VEL, MAX_LIN_VEL)
+        self._pid_ang_x.output_limits = (-MAX_ANG_VEL, MAX_ANG_VEL)
+        self._pid_ang_y.output_limits = (-MAX_ANG_VEL, MAX_ANG_VEL)
+        self._pid_ang_z.output_limits = (-MAX_ANG_VEL, MAX_ANG_VEL)
+        self._pid_lin_x.output_limits = (-MAX_LIN_VEL, MAX_LIN_VEL)
+        self._pid_lin_y.output_limits = (-MAX_LIN_VEL, MAX_LIN_VEL)
 
         self._pid_ang_x.set_auto_mode(enabled=True)
         self._pid_ang_y.set_auto_mode(enabled=True)
         self._pid_ang_z.set_auto_mode(enabled=True)
         self._pid_lin_x.set_auto_mode(enabled=True)
         self._pid_lin_y.set_auto_mode(enabled=True)
-        
-        self._controls = []
     
-    def get_controlls(self, setpoints, measures):
-        self.controls[0] = self._pid_ang_z(setpoints[0] - measures[0])
-        self.controls[1] = self._pid_ang_y(setpoints[1] - measures[1])
-        self.controls[2] = self._pid_ang_x(setpoints[2] - measures[2])
-        self.controls[3] = self._pid_lin_x(setpoints[3] - measures[3])
-        self.controls[4] = self._pid_lin_y(setpoints[4] - measures[4])
-        return self.controls
+    def get_controlls(self, errors):
+        controls = []
+        controls.append(self._pid_ang_z(errors[0]))
+        controls.append(self._pid_ang_y(errors[1]))
+        controls.append(self._pid_ang_x(errors[2]))
+        controls.append(self._pid_lin_x(errors[3]))
+        controls.append(self._pid_lin_y(errors[4]))
+        return controls
         
 
 
