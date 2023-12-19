@@ -73,18 +73,21 @@ int main()
 		ovrTrackingState ts = ovr_GetTrackingState(session, ovr_GetTimeInSeconds(), ovrTrue);
 		ovr_GetInputState(session, ovrControllerType_Touch, &InputState);
 		ovrVector2f rightStick = InputState.Thumbstick[ovrHand_Right];
+		ovrVector2f leftStick = InputState.Thumbstick[ovrHand_Left];
 		const float radialDeadZone = 0.5;
 		if (std::abs(rightStick.x) < radialDeadZone) rightStick.x = 0.0;
 		if (std::abs(rightStick.y) < radialDeadZone) rightStick.y = 0.0;
 
 		printf(
-			" HMD Lin Vel (XY): %4.2f  %4.2f\n"
+			" Touch Lin Vel (XY): %4.2f  %4.2f\n"
+			" Touch Rot Vel (Z):  %4.2f\n",
 			" HMD Ang Vel (YPR): %4.2f  %4.2f  %4.2f\n",
-			rightStick.x, rightStick.y,
+			rightStick.y, rightStick.x,
+			leftStick.x,
 			ts.HeadPose.AngularVelocity.y, -ts.HeadPose.AngularVelocity.x, -ts.HeadPose.AngularVelocity.z);
 
 		// Send float data
-		float data[] = {ts.HeadPose.AngularVelocity.y, -ts.HeadPose.AngularVelocity.x, -ts.HeadPose.AngularVelocity.z, rightStick.x, rightStick.y};
+		float data[] = {ts.HeadPose.AngularVelocity.y, -ts.HeadPose.AngularVelocity.x, -ts.HeadPose.AngularVelocity.z, rightStick.y, rightStick.x, leftStick.x};
 
 		DWORD bytesWritten;
 		if (WriteFile(hPipe, data, sizeof(data), &bytesWritten, NULL) == FALSE) {
